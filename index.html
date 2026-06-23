@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paper Trade Planner</title>
+    <meta name="theme-color" content="#111827" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Trade Planner" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="locked">
+    <section class="password-screen" id="passwordScreen" hidden>
+      <form class="password-panel" id="passwordForm">
+        <h1>Paper Trade Planner</h1>
+        <p>Enter the app password to open your paper-trading workspace.</p>
+        <label>Password<input id="appPassword" type="password" autocomplete="current-password" required /></label>
+        <button class="primary-action" type="submit">Open app</button>
+        <p class="password-error" id="passwordError" role="alert"></p>
+      </form>
+    </section>
+
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">PT</span>
+        <div>
+          <strong>Paper Trade Planner</strong>
+          <small>Beginner stock setups</small>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-button active" data-view="dashboard">Dashboard</button>
+        <button class="nav-button" data-view="candidates">Candidates</button>
+        <button class="nav-button" data-view="plans">Trade Plans</button>
+        <button class="nav-button" data-view="journal">Journal</button>
+        <button class="nav-button" data-view="progress">Progress</button>
+        <button class="nav-button" data-view="stats">Stats</button>
+        <button class="nav-button" data-view="settings">Settings</button>
+      </nav>
+      <p class="educational">Educational paper trading only. This app never tells you to buy a stock.</p>
+    </aside>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">End-of-day scanner</p>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <button class="primary-action" id="scanButton" type="button">Scan Market</button>
+      </header>
+
+      <section class="view active" id="dashboard"></section>
+      <section class="view" id="candidates"></section>
+      <section class="view" id="detail"></section>
+      <section class="view" id="plans"></section>
+      <section class="view" id="journal"></section>
+      <section class="view" id="progress"></section>
+      <section class="view" id="stats"></section>
+      <section class="view" id="settings"></section>
+    </main>
+
+    <template id="toastTemplate">
+      <div class="toast" role="status"></div>
+    </template>
+    <div id="toastRegion" aria-live="polite"></div>
+
+    <script src="data.js"></script>
+    <script src="strategy.js"></script>
+    <script src="api.js"></script>
+    <script src="site-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

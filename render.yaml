@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: paper-trade-planner
+    env: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    envVars:
+      - key: APP_PASSWORD
+        sync: false
+      - key: ALPHA_VANTAGE_KEY
+        sync: false
+      - key: MARKETSTACK_KEY
+        sync: false
+      - key: FINNHUB_KEY
+        sync: false
+      - key: TWELVE_DATA_KEY
+        sync: false
+      - key: YAHOO_RAPID_API_KEY
+        sync: false
+      - key: YAHOO_RAPID_API_HOST
+        value: apidojo-yahoo-finance-v1.p.rapidapi.com
