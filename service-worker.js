@@ -1,4 +1,4 @@
-const CACHE_NAME = "paper-trade-planner-v1";
+const CACHE_NAME = "paper-trade-planner-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
