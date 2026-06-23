@@ -1,4 +1,5 @@
 const providerLabels = {
+  stooq: "Stooq",
   yahoo: "Yahoo Finance",
   yahooRapid: "Yahoo Finance RapidAPI",
   finnhub: "Finnhub",
@@ -74,12 +75,12 @@ function applyMarketContext(candidates, marketContext) {
 function providersToTry(settings) {
   if (settings.dataProvider && settings.dataProvider !== "auto") return [settings.dataProvider];
   if (serverProxyEnabled(settings)) return ["finnhub", "twelveData", "alphaVantage", "yahoo", "marketstack"];
-  const providers = [];
+  const providers = ["stooq"];
+  if (settings.twelveDataKey) providers.push("twelveData");
+  if (settings.alphaVantageKey) providers.push("alphaVantage");
   if (settings.yahooRapidApiKey) providers.push("yahooRapid");
   if (settings.finnhubKey) providers.push("finnhub");
-  if (settings.twelveDataKey) providers.push("twelveData");
-  if (settings.marketstackKey) providers.push("marketstack");
-  if (settings.alphaVantageKey) providers.push("alphaVantage");
+  if (settings.marketstackKey && location.protocol !== "https:") providers.push("marketstack");
   providers.push("yahoo");
   return providers;
 }
@@ -90,7 +91,8 @@ function delayedDataWarning(provider) {
 
 async function fetchLiveCandidates(settings, provider) {
   const universe = await buildStockUniverse(settings, provider);
-  const symbols = universe.slice(0, Math.max(1, settings.maxSymbolsPerScan || settings.maxCandidates * 4));
+  const scanLimit = providerScanLimit(provider, settings);
+  const symbols = universe.slice(0, scanLimit);
   const summary = emptyScanSummary();
   summary.symbolsScanned = symbols.length;
   summary.filteredByUniverse = Math.max(0, universe.length - symbols.length);
@@ -131,6 +133,21 @@ async function fetchLiveCandidates(settings, provider) {
     candidates: selectDisplayCandidates(candidates, settings),
     summary
   };
+}
+
+function providerScanLimit(provider, settings) {
+  const requested = Math.max(1, Number(settings.maxSymbolsPerScan || settings.maxCandidates * 4 || 40));
+  if (serverProxyEnabled(settings)) return requested;
+  const browserLimits = {
+    twelveData: 18,
+    alphaVantage: 22,
+    finnhub: 50,
+    yahooRapid: 50,
+    stooq: 80,
+    yahoo: 80,
+    marketstack: 30
+  };
+  return Math.min(requested, browserLimits[provider] || 40);
 }
 
 async function buildStockUniverse(settings, provider) {
@@ -372,6 +389,7 @@ async function fetchSymbolCandles(symbol, settings, provider) {
   if (provider === "twelveData") return candidateFromCandles(symbol, await fetchTwelveDataCandles(symbol, settings), provider);
   if (provider === "marketstack") return candidateFromCandles(symbol, await fetchMarketstackCandles(symbol, settings), provider);
   if (provider === "alphaVantage") return candidateFromCandles(symbol, await fetchAlphaVantageCandles(symbol, settings), provider);
+  if (provider === "stooq") return candidateFromCandles(symbol, await fetchStooqCandles(symbol), provider);
   return candidateFromCandles(symbol, await fetchYahooCandles(symbol), provider);
 }
 
@@ -390,6 +408,33 @@ async function fetchJson(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
+}
+
+async function fetchText(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.text();
+}
+
+async function fetchStooqCandles(symbol) {
+  const stooqSymbol = `${symbol.toLowerCase().replace(".", "-")}.us`;
+  const directUrl = `https://stooq.com/q/d/l/?s=${encodeURIComponent(stooqSymbol)}&i=d`;
+  let csv = "";
+  try {
+    csv = await fetchText(directUrl);
+  } catch {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
+    csv = await fetchText(proxyUrl);
+  }
+  const rows = csv.trim().split(/\r?\n/).slice(1);
+  const candles = rows
+    .map((row) => {
+      const [, open, high, low, close, volume] = row.split(",");
+      return [Number(open), Number(high), Number(low), Number(close), Number(volume || 0)];
+    })
+    .filter(validCandle);
+  if (candles.length < 25) throw new Error("Stooq returned no usable candles.");
+  return candles.slice(-90);
 }
 
 async function fetchYahooCandles(symbol) {
